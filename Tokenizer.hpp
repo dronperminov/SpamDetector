@@ -3,22 +3,28 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <set>
 
 using namespace std;
 
 class Tokenizer {
+	set<string> stopWords; // список стоп слов
+
 	bool IsLetter(char c) const; // проверка символа на букву
 	bool IsDigit(char c) const; // проверка символа на цифру
 	bool IsLetterOrDigit(char c) const; // проверка символа на букву или цифру
 	char ToLower(char c) const; // перевод символа в нижний регистр
+
+	vector<string> RemoveStopWords(vector<string> &tokens); // удаление стоп слов
 public:
-	vector<string> Tokenize(istream& f);
-	vector<string> Tokenize(const string& s);
+	Tokenizer();
+	vector<string> Tokenize(istream& f, bool removeStopWords = true);
+	vector<string> Tokenize(const string& s, bool removeStopWords = true);
 };
 
 // проверка символа на букву
 bool Tokenizer::IsLetter(char c) const {
-	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_') || (c >= 'а' && c <= 'я') || (c >= 'А' && c <= 'Я');
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_')  || c == '\'' || (c >= 'а' && c <= 'я') || (c >= 'А' && c <= 'Я');
 }
 
 // проверка символа на цифру
@@ -36,10 +42,34 @@ char Tokenizer::ToLower(char c) const {
 	if (c >= 'A' && c <= 'Z')
 		return c - 'A' + 'a';
 
+	if (c >= 'А' && c <= 'Я')
+		return c - 'А' + 'а';
+
 	return c;
 }
 
-vector<string> Tokenizer::Tokenize(istream& f) {
+// удаление стоп слов
+vector<string> Tokenizer::RemoveStopWords(vector<string> &tokens) {
+	vector<string> cleared;
+
+	for (int i = 0; i < tokens.size(); i++)
+		if (stopWords.find(tokens[i]) == stopWords.end())
+			cleared.push_back(tokens[i]);
+
+	return cleared;
+}
+
+Tokenizer::Tokenizer() {
+	ifstream f("stop.txt");
+	string word;
+
+	while (getline(f, word))
+		stopWords.insert(word);
+
+	f.close();
+}
+
+vector<string> Tokenizer::Tokenize(istream& f, bool removeStopWords) {
 	vector<string> tokens;
 	char c = f.get();
 
@@ -58,10 +88,13 @@ vector<string> Tokenizer::Tokenize(istream& f) {
 			tokens.push_back(token);
 	}
 
+	if (removeStopWords)
+		return RemoveStopWords(tokens);
+
 	return tokens;
 }
 
-vector<string> Tokenizer::Tokenize(const string& s) {
+vector<string> Tokenizer::Tokenize(const string& s, bool removeStopWords) {
 	vector<string> tokens;
 	int i = 0;
 
@@ -77,6 +110,9 @@ vector<string> Tokenizer::Tokenize(const string& s) {
 		if (token != "")
 			tokens.push_back(token);
 	}
+
+	if (removeStopWords)
+		return RemoveStopWords(tokens);
 
 	return tokens;
 }
